@@ -46,7 +46,7 @@
   .legend .li{display:flex; align-items:center; gap:7px}
   .dot{width:11px; height:11px; border-radius:3px; flex:none}
 
-  .stats{display:grid; grid-template-columns:repeat(5,1fr); gap:1px; background:var(--hair); border:1px solid var(--hair); border-radius:12px; overflow:hidden; margin:34px 0 0}
+  .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(165px,1fr)); gap:1px; background:var(--hair); border:1px solid var(--hair); border-radius:12px; overflow:hidden; margin:34px 0 0}
   .stat{background:var(--card); padding:18px 16px}
   .stat .n{font-family:"Archivo"; font-weight:800; font-size:clamp(24px,3.4vw,34px); letter-spacing:-.02em; line-height:1}
   .stat .l{font-size:12.5px; color:var(--muted); margin-top:7px; line-height:1.35}
@@ -168,6 +168,7 @@
     <div class="stat red"><div class="n">8,9%</div><div class="l">sin actualizar hace más de 4 años</div></div>
     <div class="stat red"><div class="n">96,4%</div><div class="l">vencidos según su propia frecuencia declarada</div></div>
     <div class="stat crit"><div class="n">76%</div><div class="l">de las páginas de datasets dan error 404 — el vecino no llega al dato</div></div>
+    <div class="stat red"><div class="n">92%</div><div class="l">se publica sin ninguna descripción de qué contiene</div></div>
   </div>
 
   <div class="alert">
