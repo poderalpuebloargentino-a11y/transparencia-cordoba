@@ -136,6 +136,11 @@
     .hero{padding:36px 0 24px}
     .seg .seglab{font-size:11px}
   }
+  .infomsg{font-size:13.5px; margin-top:10px; min-height:1.2em}
+  .infomsg.ok{color:var(--fresh); font-weight:600}
+  .infomsg.err{color:var(--stale); font-weight:600}
+  .ghalt{font-size:12.5px; color:var(--muted); margin-top:12px}
+  .ghalt a{color:var(--teal-dk); font-weight:600}
 </style>
 </head>
 <body>
@@ -191,11 +196,14 @@
 <!-- 03 · PEDIDO DE INFORMACIÓN -->
 <section><div class="wrap">
   <div class="sec-head"><span class="sec-num">02</span><h2>Pedí información que no está</h2></div>
-  <p class="sec-sub">Si lo que querés saber no figura en el portal de datos abiertos, pedilo igual. Tu pedido se convierte en una solicitud de acceso a la información pública, y otros vecinos pueden apoyarlo: cuanto más apoyo, más difícil de ignorar.</p>
+  <p class="sec-sub">Si lo que querés saber no figura en el portal, pedilo igual —sin necesidad de ninguna cuenta—. Tu pedido llega al equipo del proyecto, que lo puede convertir en una solicitud formal de acceso a la información pública.</p>
   <div class="query">
     <div class="qbar"><textarea id="infoq" placeholder="Ej.: Subsidios al transporte por empresa, plan de arbolado, inmuebles abandonados…" aria-label="Pedir información"></textarea></div>
     <div class="chips" id="ichips"></div>
-    <button class="sendbtn" id="infosend">Enviar pedido de información</button>
+    <div class="qbar" style="margin-top:10px"><input id="infomail" type="email" placeholder="Tu mail (opcional, solo para avisarte cómo sigue tu pedido)" aria-label="Mail opcional"></div>
+    <button class="sendbtn" id="infosend">Enviar pedido</button>
+    <div id="infomsg" class="infomsg"></div>
+    <div class="ghalt">¿Preferís que tu pedido quede público y auditable? <a href="#" id="ghlink">Abrilo en GitHub ↗</a></div>
     <div class="ilabel">Pedidos de la comunidad</div>
     <div class="ilist" id="ilist"></div>
   </div>
@@ -226,11 +234,12 @@
 
 <footer><div class="wrap">
   <div>Fuente: portal de Gobierno Abierto de la Municipalidad de Córdoba · catálogo leído desde <code>/api/datos-abiertos/dato</code> · 775 datasets · corrida del __BUILT_DATE__.</div>
-  <div>Prototipo. “Vencido” = superó su frecuencia declarada más un margen, ajustable. Los reclamos y pedidos de información son de demostración y se reinician al recargar.</div>
+  <div>“Vencido” = superó su frecuencia declarada más un margen, ajustable. Los pedidos y reclamos enviados llegan al buzón del proyecto. La lista “Pedidos de la comunidad” muestra ejemplos y pedidos públicos de GitHub.</div>
 </div></footer>
 
 <script>
-const REPO="poderalpuebloargentino-a11y/transparencia-cordoba"; // <-- escribí aquí "tu-usuario/tu-repositorio" (ver README) para activar reclamos y pedidos reales por GitHub
+const REPO="poderalpuebloargentino-a11y/transparencia-cordoba";
+const FORM="https://formspree.io/f/mqevzrgj"; // buzón de pedidos abierto (sin cuenta)
 const BASE="https://gobiernoabierto.cordoba.gob.ar";
 const BUILT="__BUILT_DATE__";
 const DATA = __DATA__;
@@ -246,7 +255,7 @@ buckets.forEach(b=>{const pct=100*b.n/775,s=document.createElement("div");s.clas
 // reclamos (update/access requests)
 const pedidos={};
 const plist=document.getElementById("plist"), pcount=document.getElementById("pcount");
-function addPedido(t){pedidos[t]=(pedidos[t]||0)+1; renderPedidos(); document.querySelectorAll('.ask[data-t="'+cssA(t)+'"]').forEach(b=>{b.disabled=true;b.textContent="Reclamado ✓";}); var r=DATA.find(function(x){return x.t===t;})||{}; var tipo=r.x?"acceso (página caída 404)":"actualización"; ghIssue("reclamo","[Reclamo] "+t, "Reclamo de "+tipo+" del conjunto de datos «"+t+"».\n\nCategoría: "+(r.c||"—")+"\nPeriodicidad declarada: "+(r.p||"—")+"\nÚltima actualización registrada: "+(r.f||"sin dato")+"\n\nGenerado desde el Monitor de Transparencia.");}
+function addPedido(t){pedidos[t]=(pedidos[t]||0)+1; renderPedidos(); document.querySelectorAll('.ask[data-t="'+cssA(t)+'"]').forEach(b=>{b.disabled=true;b.textContent="Reclamado ✓";}); var r=DATA.find(function(x){return x.t===t;})||{}; var tipo=r.x?"acceso (página caída 404)":"actualización"; if(FORM){ fetch(FORM,{method:"POST",headers:{"Accept":"application/json","Content-Type":"application/json"},body:JSON.stringify({asunto:"Reclamo de "+tipo,dataset:t,categoria:(r.c||""),periodicidad:(r.p||""),ultima_actualizacion:(r.f||"")})}).catch(function(){}); } }
 function cssA(t){return t.replace(/["\\]/g,"\\$&");}
 function renderPedidos(){
   const keys=Object.keys(pedidos), tot=keys.reduce((a,k)=>a+pedidos[k],0);
@@ -320,11 +329,19 @@ function renderInfo(){
     ilist.appendChild(card);
   });
 }
-document.getElementById("infosend").addEventListener("click",()=>{
-  const v=infoq.value.trim(); if(!v) return;
-  ghIssue("pedido-informacion","[Pedido de información] "+v, "Pedido de acceso a la información pública:\n\n"+v+"\n\nGenerado desde el Monitor de Transparencia. Apoyá este pedido con un 👍.");
-  infoReqs.unshift({txt:v,n:1,mine:true}); infoq.value=""; renderInfo();
+document.getElementById("infosend").addEventListener("click",async ()=>{
+  const v=infoq.value.trim(); const msg=document.getElementById("infomsg");
+  if(!v){ msg.textContent="Escribí tu pedido primero."; msg.className="infomsg err"; return; }
+  const email=document.getElementById("infomail").value.trim();
+  msg.textContent="Enviando…"; msg.className="infomsg";
+  try{
+    const r=await fetch(FORM,{method:"POST",headers:{"Accept":"application/json","Content-Type":"application/json"},body:JSON.stringify({asunto:"Pedido de información",pedido:v,mail:email||"(no dejó mail)"})});
+    if(!r.ok) throw 0;
+    msg.textContent="¡Gracias! Recibimos tu pedido."; msg.className="infomsg ok";
+    infoReqs.unshift({txt:v,n:1,mine:true}); infoq.value=""; document.getElementById("infomail").value=""; renderInfo();
+  }catch(e){ msg.textContent="No se pudo enviar ahora. Probá de nuevo en un momento."; msg.className="infomsg err"; }
 });
+document.getElementById("ghlink").addEventListener("click",function(e){ e.preventDefault(); var v=document.getElementById("infoq").value.trim()||"(describí acá tu pedido)"; ghIssue("pedido-informacion","[Pedido de información] "+v,"Pedido de acceso a la información pública:\n\n"+v); });
 infoq.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key==="Enter")document.getElementById("infosend").click();});
 
 async function loadCommunity(){
