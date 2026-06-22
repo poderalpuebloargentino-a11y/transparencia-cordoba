@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monitor de Transparencia · Datos Abiertos de Córdoba</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F1F2EE; --card:#FBFBF9; --ink:#16201D; --muted:#5C665F;
+    --hair:#DADDD4; --teal:#0F6E63; --teal-dk:#0A4F47;
+    --fresh:#2F8F5B; --lag:#C2851A; --stale:#C0492F; --crit:#7C2230; --nil:#9AA29B;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:"Public Sans",system-ui,sans-serif; font-size:16px; line-height:1.55; -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1060px; margin:0 auto; padding:0 22px}
+  a{color:var(--teal-dk)}
+  .mono{font-family:"JetBrains Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums}
+
+  .top{border-bottom:1px solid var(--hair); background:var(--paper); position:sticky; top:0; z-index:5}
+  .top .wrap{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px 22px; flex-wrap:wrap}
+  .brand{display:flex; align-items:center; gap:11px}
+  .pulse{width:11px; height:11px; border-radius:50%; background:var(--stale); animation:pulse 2.4s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(192,73,47,.45)}70%{box-shadow:0 0 0 10px rgba(192,73,47,0)}100%{box-shadow:0 0 0 0 rgba(192,73,47,0)}}
+  @media (prefers-reduced-motion:reduce){.pulse{animation:none}}
+  .brand b{font-family:"Archivo"; font-weight:800; letter-spacing:-.01em; font-size:15px}
+  .stamp{font-size:12px; color:var(--muted)}
+  .stamp .tag{display:inline-block; border:1px solid var(--hair); border-radius:99px; padding:2px 9px; margin-right:8px; font-weight:600; color:var(--teal-dk); background:#fff}
+
+  .hero{padding:52px 0 30px}
+  .eyebrow{font-family:"JetBrains Mono",monospace; font-size:12.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--teal-dk); margin:0 0 16px}
+  .hero h1{font-family:"Archivo"; font-weight:800; letter-spacing:-.025em; line-height:1.04; font-size:clamp(31px,5.4vw,56px); margin:0 0 18px; max-width:18ch}
+  .hero h1 .hl{color:var(--stale)}
+  .lede{font-size:clamp(17px,2.2vw,20px); color:var(--muted); max-width:60ch; margin:0}
+
+  .bar-block{margin:38px 0 8px}
+  .bar-cap{display:flex; justify-content:space-between; align-items:baseline; font-size:13px; color:var(--muted); margin-bottom:9px}
+  .bar{display:flex; height:46px; border-radius:9px; overflow:hidden; border:1px solid var(--hair)}
+  .seg{position:relative; min-width:2px; transition:filter .15s}
+  .seg:hover{filter:brightness(1.07)}
+  .seg .seglab{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:"JetBrains Mono",monospace; font-weight:700; font-size:13px; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.25)}
+  .legend{display:flex; flex-wrap:wrap; gap:14px 22px; margin-top:14px; font-size:13px; color:var(--muted)}
+  .legend .li{display:flex; align-items:center; gap:7px}
+  .dot{width:11px; height:11px; border-radius:3px; flex:none}
+
+  .stats{display:grid; grid-template-columns:repeat(5,1fr); gap:1px; background:var(--hair); border:1px solid var(--hair); border-radius:12px; overflow:hidden; margin:34px 0 0}
+  .stat{background:var(--card); padding:18px 16px}
+  .stat .n{font-family:"Archivo"; font-weight:800; font-size:clamp(24px,3.4vw,34px); letter-spacing:-.02em; line-height:1}
+  .stat .l{font-size:12.5px; color:var(--muted); margin-top:7px; line-height:1.35}
+  .stat.red .n{color:var(--stale)} .stat.green .n{color:var(--fresh)} .stat.crit .n{color:var(--crit)}
+
+  .alert{margin:18px 0 0; border:1px solid #E3B7AE; background:#FCF1EE; border-left:4px solid var(--crit); border-radius:12px; padding:17px 20px; display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap}
+  .alert .abadge{flex:none; font-family:"JetBrains Mono",monospace; font-size:10.5px; font-weight:700; letter-spacing:.05em; color:#fff; background:var(--crit); padding:5px 9px; border-radius:6px}
+  .alert p{margin:0; font-size:15px; line-height:1.5; flex:1; min-width:240px}
+  .alert p b{color:var(--crit)}
+
+  section{padding:46px 0; border-top:1px solid var(--hair)}
+  .sec-head{display:flex; align-items:baseline; gap:14px; margin-bottom:6px}
+  .sec-num{font-family:"JetBrains Mono",monospace; font-size:13px; color:var(--teal-dk); font-weight:700}
+  h2{font-family:"Archivo"; font-weight:700; letter-spacing:-.02em; font-size:clamp(22px,3.2vw,30px); margin:0}
+  .sec-sub{color:var(--muted); max-width:66ch; margin:10px 0 24px; font-size:15.5px}
+
+  .query{background:var(--card); border:1px solid var(--hair); border-radius:14px; padding:22px}
+  .qbar input,.qbar textarea{width:100%; font:inherit; font-size:16px; padding:13px 15px; border:1.5px solid var(--hair); border-radius:10px; background:#fff; color:var(--ink)}
+  .qbar textarea{font-size:15px; resize:vertical; min-height:74px}
+  .qbar input:focus,.qbar textarea:focus{outline:none; border-color:var(--teal)}
+  .chips{display:flex; gap:8px; flex-wrap:wrap; margin-top:13px}
+  .chip{font:inherit; font-size:13px; padding:6px 13px; border:1px solid var(--hair); background:#fff; color:var(--teal-dk); border-radius:99px; cursor:pointer; font-weight:600}
+  .chip:hover{border-color:var(--teal); background:#F0F7F5}
+  .qmeta{font-size:13px; color:var(--muted); margin:18px 0 10px; font-family:"JetBrains Mono",monospace}
+  .results{display:flex; flex-direction:column; gap:8px; max-height:480px; overflow:auto}
+  .row{display:flex; align-items:center; gap:12px; padding:11px 13px; background:#fff; border:1px solid var(--hair); border-radius:9px; flex-wrap:wrap}
+  .row .rt{flex:1 1 230px}
+  .rtt{display:block; font-size:14.5px; line-height:1.3; font-weight:500}
+  .rmeta{display:block; font-size:11px; color:var(--muted); margin-top:3px; font-family:"JetBrains Mono",monospace; letter-spacing:.02em}
+  .rmeta .rcat{color:var(--teal-dk); text-transform:uppercase}
+  .badge{font-family:"JetBrains Mono",monospace; font-size:11px; font-weight:700; letter-spacing:.03em; padding:4px 9px; border-radius:6px; white-space:nowrap; color:#fff}
+  .b-fresh{background:var(--fresh)} .b-lag{background:var(--lag)} .b-stale{background:var(--stale)} .b-crit{background:var(--crit)} .b-nil{background:var(--nil)}
+  .ract{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+  .rlink{font-size:12.5px; font-weight:600; color:var(--teal-dk); text-decoration:none; white-space:nowrap}
+  .rlink:hover{text-decoration:underline}
+  .rbroken{font-family:"JetBrains Mono",monospace; font-size:11px; font-weight:700; color:var(--crit); background:#FCF1EE; border:1px solid #E3B7AE; padding:4px 8px; border-radius:6px; white-space:nowrap}
+  .ask{font:inherit; font-size:12px; font-weight:600; padding:6px 11px; border-radius:7px; border:1px solid var(--teal); background:#fff; color:var(--teal-dk); cursor:pointer; white-space:nowrap}
+  .ask:hover{background:#F0F7F5}
+  .ask[disabled]{border-color:var(--fresh); color:var(--fresh); background:#F1F8F3; cursor:default}
+  .empty{padding:26px; text-align:center; color:var(--muted); font-size:14.5px}
+
+  .pedidos{margin-top:18px; border:1px dashed var(--teal); border-radius:12px; padding:16px 18px; background:#F4F9F7}
+  .pedidos h3{margin:0 0 4px; font-family:"Archivo"; font-size:15px; font-weight:700; color:var(--teal-dk)}
+  .pedidos p{margin:0 0 10px; font-size:13px; color:var(--muted)}
+  .plist{display:flex; flex-direction:column; gap:6px}
+  .pitem{display:flex; justify-content:space-between; gap:10px; font-size:13.5px; padding:7px 11px; background:#fff; border:1px solid var(--hair); border-radius:7px}
+  .pitem b{font-family:"JetBrains Mono",monospace; color:var(--teal-dk)}
+  .pempty{font-size:13px; color:var(--muted); font-style:italic}
+
+  .sendbtn{margin-top:12px; font:inherit; font-weight:600; font-size:14px; padding:11px 18px; border-radius:10px; border:none; background:var(--teal); color:#fff; cursor:pointer}
+  .sendbtn:hover{background:var(--teal-dk)}
+  .ilabel{font-size:11px; color:var(--muted); margin:20px 0 8px; font-family:"JetBrains Mono",monospace; text-transform:uppercase; letter-spacing:.06em}
+  .ilist{display:flex; flex-direction:column; gap:8px}
+  .icard{display:flex; align-items:center; gap:12px; padding:12px 14px; background:#fff; border:1px solid var(--hair); border-radius:9px}
+  .icard .itxt{flex:1; font-size:14.5px; line-height:1.35}
+  .icard .icount{font-family:"JetBrains Mono",monospace; font-weight:700; color:var(--teal-dk); font-size:13px; white-space:nowrap}
+  .icard .isup{font:inherit; font-size:12px; font-weight:600; padding:6px 12px; border:1px solid var(--teal); background:#fff; color:var(--teal-dk); border-radius:99px; cursor:pointer; white-space:nowrap}
+  .icard .isup:hover{background:#F0F7F5}
+  .icard.mine{border-color:var(--teal); background:#F4F9F7}
+
+  .offenders{display:grid; grid-template-columns:repeat(auto-fill,minmax(248px,1fr)); gap:12px}
+  .ocard{background:var(--card); border:1px solid var(--hair); border-radius:10px; padding:15px 16px; display:flex; flex-direction:column; gap:11px}
+  .ocard .ot{font-weight:600; font-size:14.5px; line-height:1.3; min-height:2.6em}
+  .ocard .oc{font-family:"JetBrains Mono",monospace; font-size:10.5px; letter-spacing:.04em; text-transform:uppercase; color:var(--teal-dk); margin-top:-5px}
+  .ocard .ogrid{display:flex; gap:8px}
+  .ocol{flex:1; border:1px solid var(--hair); border-radius:8px; padding:9px 10px; background:#fff}
+  .ocol .ok{font-family:"JetBrains Mono",monospace; font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted)}
+  .ocol .ov{font-weight:700; font-size:14px; margin-top:3px; line-height:1.2}
+  .ocol.real{background:#FCF4F2; border-color:#EAC9C2} .ocol.real .ov{color:var(--crit)}
+  .ocard .ofoot{display:flex; align-items:center; justify-content:space-between; gap:8px}
+  .ocard .odate{font-family:"JetBrains Mono",monospace; font-size:11.5px; color:var(--muted)}
+
+  .honest{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  .hbox{border:1px solid var(--hair); border-radius:11px; padding:18px 19px; background:var(--card)}
+  .hbox h3{margin:0 0 9px; font-family:"Archivo"; font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px}
+  .hbox.ok h3{color:var(--fresh)} .hbox.no h3{color:var(--lag)}
+  .hbox p{margin:0; font-size:14px; color:var(--muted); line-height:1.55}
+  .ic{font-family:"JetBrains Mono",monospace; font-weight:700}
+
+  footer{border-top:1px solid var(--hair); padding:30px 0 60px; font-size:13px; color:var(--muted)}
+  footer .wrap{display:flex; flex-direction:column; gap:8px}
+  footer code{font-family:"JetBrains Mono",monospace; background:#fff; border:1px solid var(--hair); padding:1px 6px; border-radius:5px; font-size:12px}
+
+  @media (max-width:720px){
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .honest{grid-template-columns:1fr}
+    .hero{padding:36px 0 24px}
+    .seg .seglab{font-size:11px}
+  }
+</style>
+</head>
+<body>
+
+<div class="top"><div class="wrap">
+  <div class="brand"><span class="pulse" aria-hidden="true"></span><b>Monitor de Transparencia · Córdoba</b></div>
+  <div class="stamp"><span class="tag">PROTOTIPO</span>datos reales · corrida del <span class="mono">__BUILT_DATE__</span></div>
+</div></div>
+
+<header class="hero"><div class="wrap">
+  <p class="eyebrow">Datos abiertos de la Municipalidad de Córdoba</p>
+  <h1>De 775 conjuntos de datos públicos, <span class="hl">solo 3 de cada 100</span> se actualizaron en los últimos tres meses.</h1>
+  <p class="lede">Buscá un tema y llegá directo al dato. Si está desactualizado o caído, te lo decimos y podés reclamarlo. Y si lo que querés saber ni siquiera está, lo pedís. No reemplazamos al portal oficial: vigilamos que cumpla.</p>
+  <div class="bar-block">
+    <div class="bar-cap"><span>Antigüedad de la última actualización · 775 datasets</span><span class="mono">100%</span></div>
+    <div class="bar" id="antbar"></div>
+    <div class="legend" id="antlegend"></div>
+  </div>
+</div></header>
+
+<div class="wrap">
+  <div class="stats">
+    <div class="stat green"><div class="n">3,1%</div><div class="l">actualizados en los últimos 90 días</div></div>
+    <div class="stat red"><div class="n">77,7%</div><div class="l">llevan entre 1 y 2 años sin tocarse</div></div>
+    <div class="stat red"><div class="n">8,9%</div><div class="l">sin actualizar hace más de 4 años</div></div>
+    <div class="stat red"><div class="n">96,4%</div><div class="l">vencidos según su propia frecuencia declarada</div></div>
+    <div class="stat crit"><div class="n">76%</div><div class="l">de las páginas de datasets dan error 404 — el vecino no llega al dato</div></div>
+  </div>
+
+  <div class="alert">
+    <span class="abadge">VERIFICADO · __BUILT_DATE__</span>
+    <p><b>592 de las 774 páginas de datasets (76%) devuelven error 404.</b> El catálogo dice que el dato está, pero 3 de cada 4 veces el vecino choca con una página caída. El caso más grave: las 549 declaraciones juradas de funcionarios figuran publicadas y ninguna abre.</p>
+  </div>
+</div>
+
+<!-- 01 · BÚSQUEDA -->
+<section><div class="wrap">
+  <div class="sec-head"><span class="sec-num">01</span><h2>Buscá un tema</h2></div>
+  <p class="sec-sub">Escribí en lenguaje simple. Recibís el dato, su estado de transparencia y el enlace directo al portal oficial. Si está caído, te lo marcamos y podés reclamar el acceso. Probá “jardines”, “declaraciones juradas”, “catastro”.</p>
+  <div class="query">
+    <div class="qbar"><input id="q" type="search" placeholder="Ej.: jardines municipales, declaraciones juradas, espacios verdes…" aria-label="Buscar datasets"></div>
+    <div class="chips" id="chips"></div>
+    <div class="qmeta" id="qmeta"></div>
+    <div class="results" id="results"></div>
+    <div class="pedidos">
+      <h3>Tus reclamos <span id="pcount" class="mono"></span></h3>
+      <p>Cada reclamo de actualización o de acceso suma. En la versión real queda registrado y fechado, y sirve para mostrarle a la Municipalidad qué exige la ciudadanía.</p>
+      <div class="plist" id="plist"></div>
+    </div>
+  </div>
+</div></section>
+
+<!-- 03 · PEDIDO DE INFORMACIÓN -->
+<section><div class="wrap">
+  <div class="sec-head"><span class="sec-num">02</span><h2>Pedí información que no está</h2></div>
+  <p class="sec-sub">Si lo que querés saber no figura en el portal de datos abiertos, pedilo igual. Tu pedido se convierte en una solicitud de acceso a la información pública, y otros vecinos pueden apoyarlo: cuanto más apoyo, más difícil de ignorar.</p>
+  <div class="query">
+    <div class="qbar"><textarea id="infoq" placeholder="Ej.: Subsidios al transporte por empresa, plan de arbolado, inmuebles abandonados…" aria-label="Pedir información"></textarea></div>
+    <div class="chips" id="ichips"></div>
+    <button class="sendbtn" id="infosend">Enviar pedido de información</button>
+    <div class="ilabel">Pedidos de la comunidad</div>
+    <div class="ilist" id="ilist"></div>
+  </div>
+</div></section>
+
+<!-- 02 · PROMESA VS REALIDAD -->
+<section><div class="wrap">
+  <div class="sec-head"><span class="sec-num">03</span><h2>Lo que prometieron mantener al día, y no</h2></div>
+  <p class="sec-sub">La Municipalidad le pone a cada conjunto de datos una etiqueta oficial de cada cuánto promete actualizarlo: anual, mensual, en tiempo real. Acá comparamos esa promesa con la última fecha real. Estos son los casos donde la distancia es más grande.</p>
+  <div class="offenders" id="offenders"></div>
+</div></section>
+
+<!-- 04 · HONESTIDAD -->
+<section><div class="wrap">
+  <div class="sec-head"><span class="sec-num">04</span><h2>Qué verificamos y qué no</h2></div>
+  <p class="sec-sub">Un monitor de transparencia tiene que ser el primero en ser transparente.</p>
+  <div class="honest">
+    <div class="hbox ok">
+      <h3><span class="ic">✓</span> Verificado</h3>
+      <p>Las 775 fechas de actualización y su frecuencia declarada. El estado de las 549 páginas de declaraciones juradas (todas dan 404). Una ruta de la API permanentemente caída (error 500). Y que el 92% de los datasets se publica sin ninguna descripción de qué contienen. Todo sale de fuentes oficiales y queda fechado.</p>
+    </div>
+    <div class="hbox no">
+      <h3><span class="ic">!</span> No verificado en esta corrida</h3>
+      <p>La descarga de cada archivo alojado en el servidor externo del municipio, que este entorno de prueba no podía alcanzar. Donde no pudimos llegar, no afirmamos nada: distinguir “el archivo no está” de “no pude llegar” es lo que evita acusar en falso.</p>
+    </div>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  <div>Fuente: portal de Gobierno Abierto de la Municipalidad de Córdoba · catálogo leído desde <code>/api/datos-abiertos/dato</code> · 775 datasets · corrida del __BUILT_DATE__.</div>
+  <div>Prototipo. “Vencido” = superó su frecuencia declarada más un margen, ajustable. Los reclamos y pedidos de información son de demostración y se reinician al recargar.</div>
+</div></footer>
+
+<script>
+const REPO=""; // <-- escribí aquí "tu-usuario/tu-repositorio" (ver README) para activar reclamos y pedidos reales por GitHub
+const BASE="https://gobiernoabierto.cordoba.gob.ar";
+const BUILT="__BUILT_DATE__";
+const DATA = __DATA__;
+function ghIssue(label,title,body){ if(!REPO){ return false; } var u="https://github.com/"+REPO+"/issues/new?labels="+encodeURIComponent(label)+"&title="+encodeURIComponent(title)+"&body="+encodeURIComponent(body||""); window.open(u,"_blank","noopener"); return true; }
+const THR = {"En tiempo real":7,"Cada quince días":21,"Mensual":45,"Trimestral":120,"Semestral":210,"Anual":430};
+function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+
+// antiquity bar
+const buckets=[{lab:"≤ 90 días",n:24,k:"#2F8F5B"},{lab:"91–365 días",n:17,k:"#C2851A"},{lab:"1–2 años",n:602,k:"#C0492F"},{lab:"2–4 años",n:60,k:"#9A3326"},{lab:"+ 4 años",n:69,k:"#7C2230"},{lab:"sin dato",n:3,k:"#9AA29B"}];
+const bar=document.getElementById("antbar"), leg=document.getElementById("antlegend");
+buckets.forEach(b=>{const pct=100*b.n/775,s=document.createElement("div");s.className="seg";s.style.width=pct+"%";s.style.background=b.k;s.title=b.lab+": "+b.n+" ("+pct.toFixed(1)+"%)";if(pct>7){const l=document.createElement("span");l.className="seglab";l.textContent=Math.round(pct)+"%";s.appendChild(l);}bar.appendChild(s);const li=document.createElement("div");li.className="li";li.innerHTML='<span class="dot" style="background:'+b.k+'"></span>'+b.lab+' · '+b.n;leg.appendChild(li);});
+
+// reclamos (update/access requests)
+const pedidos={};
+const plist=document.getElementById("plist"), pcount=document.getElementById("pcount");
+function addPedido(t){pedidos[t]=(pedidos[t]||0)+1; renderPedidos(); document.querySelectorAll('.ask[data-t="'+cssA(t)+'"]').forEach(b=>{b.disabled=true;b.textContent="Reclamado ✓";}); var r=DATA.find(function(x){return x.t===t;})||{}; var tipo=r.x?"acceso (página caída 404)":"actualización"; ghIssue("reclamo","[Reclamo] "+t, "Reclamo de "+tipo+" del conjunto de datos «"+t+"».\n\nCategoría: "+(r.c||"—")+"\nPeriodicidad declarada: "+(r.p||"—")+"\nÚltima actualización registrada: "+(r.f||"sin dato")+"\n\nGenerado desde el Monitor de Transparencia.");}
+function cssA(t){return t.replace(/["\\]/g,"\\$&");}
+function renderPedidos(){
+  const keys=Object.keys(pedidos), tot=keys.reduce((a,k)=>a+pedidos[k],0);
+  pcount.textContent=tot?("· "+tot):"";
+  if(!keys.length){plist.innerHTML='<div class="pempty">Todavía no reclamaste nada. Usá el botón en cualquier resultado.</div>';return;}
+  plist.innerHTML=""; keys.sort((a,b)=>pedidos[b]-pedidos[a]).forEach(k=>{const d=document.createElement("div");d.className="pitem";d.innerHTML='<span>'+esc(k)+'</span><b>'+pedidos[k]+'×</b>';plist.appendChild(d);});
+}
+
+// search
+const q=document.getElementById("q"), res=document.getElementById("results"), qmeta=document.getElementById("qmeta"), chipsWrap=document.getElementById("chips");
+["jardines","declaraciones juradas","sueldos","catastro","espacios verdes","transporte","presupuesto","ciclovías","habilitaciones","residuos","contrataciones"].forEach(t=>{const c=document.createElement("button");c.className="chip";c.textContent=t;c.onclick=()=>{q.value=t;render(t);};chipsWrap.appendChild(c);});
+function status(r){
+  if(r.x) return {cls:"b-crit",txt:"ERROR 404"};
+  if(r.d==null) return {cls:"b-nil",txt:"SIN DATO"};
+  if(r.v) return {cls:"b-crit",txt:"VENCIDO"};
+  if(r.d<=90) return {cls:"b-fresh",txt:"AL DÍA"};
+  if(r.d<=365) return {cls:"b-lag",txt:"ATRASADO"};
+  if(r.d<=1460) return {cls:"b-stale",txt:"DESACTUALIZADO"};
+  return {cls:"b-crit",txt:"ABANDONADO"};
+}
+function render(term){
+  term=(term||"").trim().toLowerCase(); res.innerHTML="";
+  if(!term){qmeta.textContent="Escribí un tema para empezar.";return;}
+  const hits=DATA.filter(r=>r.t&&r.t.toLowerCase().includes(term)).sort((a,b)=>(b.x-a.x)||((b.d||-1)-(a.d||-1)));
+  qmeta.textContent=hits.length+" resultado"+(hits.length===1?"":"s")+" para “"+term+"”";
+  if(!hits.length){res.innerHTML='<div class="empty">No figura en el portal oficial. Podés pedirlo más abajo, en “Pedí información que no está”.</div>';return;}
+  hits.slice(0,120).forEach(r=>{
+    const st=status(r), done=pedidos[r.t];
+    const link = r.x ? '<span class="rbroken">⚠ 404 · página caída</span>'
+                     : (r.u ? '<a class="rlink" href="'+BASE+esc(r.u)+'" target="_blank" rel="noopener">Ver en portal ↗</a>' : '');
+    const reqLabel = r.x ? "Reclamar acceso" : "Pedir actualización";
+    const row=document.createElement("div"); row.className="row";
+    row.innerHTML='<span class="rt"><span class="rtt">'+esc(r.t)+'</span>'+
+        '<span class="rmeta"><span class="rcat">'+esc(r.c||"—")+'</span> · '+(r.p||"—")+' · últ. '+(r.f||"s/d")+'</span></span>'+
+      '<span class="badge '+st.cls+'">'+st.txt+'</span>'+
+      '<span class="ract">'+link+'<button class="ask" data-t="'+esc(r.t)+'" '+(done?'disabled':'')+'>'+(done?"Reclamado ✓":reqLabel)+'</button></span>';
+    row.querySelector(".ask").addEventListener("click",()=>addPedido(r.t));
+    res.appendChild(row);
+  });
+}
+q.addEventListener("input",e=>render(e.target.value));
+
+// promise vs reality
+const offWrap=document.getElementById("offenders");
+const OFF_KEYS=["Catastro","FOSAC","Recolección diferenciada de residuos","Habilitaciones de comercios"];
+OFF_KEYS.map(k=>DATA.find(r=>r.t&&(r.t===k||r.t.indexOf(k)===0))).filter(Boolean).forEach(r=>{
+  const yrs=(r.d/365), c=document.createElement("div"); c.className="ocard";
+  const link = r.x ? '<span class="rbroken">⚠ 404 · página caída</span>' : (r.u ? '<a class="rlink" href="'+BASE+esc(r.u)+'" target="_blank" rel="noopener">Ver en portal ↗</a>' : '<span></span>');
+  c.innerHTML='<div class="ot">'+esc(r.t)+'</div><div class="oc">'+esc(r.c||"—")+'</div>'+
+    '<div class="ogrid"><div class="ocol"><div class="ok">Promete</div><div class="ov">'+esc(r.p)+'</div></div>'+
+    '<div class="ocol real"><div class="ok">Última real</div><div class="ov">hace '+yrs.toFixed(1)+' años</div></div></div>'+
+    '<div class="ofoot">'+link+'<button class="ask" data-t="'+esc(r.t)+'">Pedir actualización</button></div>';
+  c.querySelector(".ask").addEventListener("click",()=>addPedido(r.t));
+  offWrap.appendChild(c);
+});
+
+// info requests
+const infoReqs=[
+  {txt:"Subsidios al transporte: cuánto, a qué empresa y a cambio de qué",n:31},
+  {txt:"Plan de arbolado: árboles plantados y mantenidos por año",n:24},
+  {txt:"Inmuebles y obras abandonadas de la ciudad (registro público)",n:18},
+  {txt:"Cuánto le paga el municipio a cada proveedor",n:12},
+];
+const ilist=document.getElementById("ilist"), infoq=document.getElementById("infoq"), ichips=document.getElementById("ichips");
+["Subsidios al transporte por empresa","Cámaras de seguridad y monitoreo","Plan de arbolado urbano","Inmuebles abandonados / baldíos","Gasto en publicidad oficial","Contrataciones directas sin licitación","Reclamos resueltos por la App Ciudadana","Banco de tierras / regularización dominial"].forEach(t=>{const c=document.createElement("button");c.className="chip";c.textContent=t;c.onclick=()=>{infoq.value=t;infoq.focus();};ichips.appendChild(c);});
+function renderInfo(){
+  ilist.innerHTML=""; infoReqs.sort((a,b)=>b.n-a.n).forEach((it,idx)=>{
+    const card=document.createElement("div"); card.className="icard"+(it.mine?" mine":"");
+    card.innerHTML='<span class="itxt">'+esc(it.txt)+'</span><span class="icount">'+it.n+' apoyo'+(it.n===1?'':'s')+'</span><button class="isup">Apoyar +1</button>';
+    card.querySelector(".isup").addEventListener("click",function(){ if(it.url){ window.open(it.url,"_blank","noopener"); } else { it.n++; renderInfo(); } });
+    ilist.appendChild(card);
+  });
+}
+document.getElementById("infosend").addEventListener("click",()=>{
+  const v=infoq.value.trim(); if(!v) return;
+  ghIssue("pedido-informacion","[Pedido de información] "+v, "Pedido de acceso a la información pública:\n\n"+v+"\n\nGenerado desde el Monitor de Transparencia. Apoyá este pedido con un 👍.");
+  infoReqs.unshift({txt:v,n:1,mine:true}); infoq.value=""; renderInfo();
+});
+infoq.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key==="Enter")document.getElementById("infosend").click();});
+
+async function loadCommunity(){
+  if(!REPO){ renderInfo(); return; }
+  try{
+    const r=await fetch("https://api.github.com/repos/"+REPO+"/issues?state=open&labels=pedido-informacion&per_page=50");
+    if(!r.ok) throw 0;
+    const arr=await r.json();
+    if(Array.isArray(arr)&&arr.length){
+      infoReqs.length=0;
+      arr.forEach(function(it){ infoReqs.push({ txt:(it.title||"").replace(/^\[Pedido de información\]\s*/,""), n:(it.reactions&&it.reactions["+1"])||0, url:it.html_url }); });
+    }
+    renderInfo();
+  }catch(e){ renderInfo(); }
+}
+render("declaraciones juradas"); renderPedidos(); loadCommunity();
+</script>
+</body>
+</html>
